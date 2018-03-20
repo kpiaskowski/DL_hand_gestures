@@ -48,7 +48,7 @@ class DataProvider():
         Creates label by hand binary image extraction. Part of TF Dataset pipeline.
         Requires uint8 img and label, returns img and label in uin8 format
         """
-        _, label = cv2.threshold(loaded_label, 127, 255, cv2.THRESH_OTSU)
+        _, label = cv2.threshold(loaded_label, 120, 255, cv2.THRESH_BINARY)
         kernel = np.ones((5, 5), np.uint8)
         label = cv2.dilate(label, kernel, iterations=1)
         _, contours, _ = cv2.findContours(label, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
