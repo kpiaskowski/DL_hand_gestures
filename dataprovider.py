@@ -10,28 +10,37 @@ class DataProvider():
     def __init__(self, batch_size, root_folder='data', label_w=64, label_h=48):
         self.label_w, self.label_h = label_w, label_h
         self.batch_size = batch_size
+        self.val_subjects = ['Subject38', 'Subject39']
 
-        self.img_names, self.label_names = self.get_filenames(root_folder)
-        self.img_names, self.label_names = shuffle([self.img_names, self.label_names])
-
+        self.t_img_names, self.t_label_names, self.v_img_names, self.v_label_names = self.get_filenames(root_folder)
+        self.t_img_names, self.t_label_names = shuffle([self.t_img_names, self.t_label_names])
+        self.v_img_names, self.v_label_names = shuffle([self.v_img_names, self.v_label_names])
 
     def get_num_batches(self):
-        return int(len(self.img_names) * 0.95) // self.batch_size, int(len(self.img_names) * 0.05) // self.batch_size
+        return len(self.t_img_names) // self.batch_size, len(self.v_img_names) // self.batch_size
 
     def get_filenames(self, root_folder):
         """
         Searches through folders and extract filenames
         """
-        images = []
-        labels = []
+        t_images = []
+        t_labels = []
+        v_images = []
+        v_labels = []
         for dirName, subdirList, fileList in os.walk(root_folder):
             files = [fname for fname in fileList]
             if len(files) > 0:
                 if 'Depth' in dirName:
-                    labels.extend([os.path.join(dirName, fname) for fname in fileList])
+                    if any(subj in dirName for subj in self.val_subjects):
+                        v_labels.extend([os.path.join(dirName, fname) for fname in fileList])
+                    else:
+                        t_labels.extend([os.path.join(dirName, fname) for fname in fileList])
                 elif 'Color' in dirName:
-                    images.extend([os.path.join(dirName, fname) for fname in fileList])
-        return sorted(images), sorted(labels)
+                    if any(subj in dirName for subj in self.val_subjects):
+                        v_images.extend([os.path.join(dirName, fname) for fname in fileList])
+                    else:
+                        t_images.extend([os.path.join(dirName, fname) for fname in fileList])
+        return sorted(t_images), sorted(t_labels), sorted(v_images), sorted(v_labels)
 
     def read_images(self, img_name, label_name):
         """
@@ -62,8 +71,8 @@ class DataProvider():
 
     def get_data(self):
         # training dataset
-        train_image_names = tf.constant(self.img_names[:int(len(self.img_names) * 0.95)])
-        train_label_names = tf.constant(self.label_names[:int(len(self.label_names) * 0.95)])
+        train_image_names = tf.constant(self.t_img_names)
+        train_label_names = tf.constant(self.t_label_names)
 
         training_dataset = tf.data.Dataset.from_tensor_slices((train_image_names, train_label_names))
         training_dataset = training_dataset.shuffle(buffer_size=500000)
@@ -71,12 +80,12 @@ class DataProvider():
         training_dataset = training_dataset.map(
             lambda img, label: tuple(tf.py_func(self.create_label, [img, label], [tf.float32, tf.float32], stateful=False)),
             num_parallel_calls=4)
-        training_dataset = training_dataset.prefetch(self.batch_size * 10)
+        training_dataset = training_dataset.prefetch(self.batch_size)
         training_dataset = training_dataset.batch(self.batch_size)
 
         # val dataset
-        val_image_names = tf.constant(self.img_names[int(len(self.img_names) * 0.95):])
-        val_label_names = tf.constant(self.label_names[int(len(self.label_names) * 0.95):])
+        val_image_names = tf.constant(self.v_img_names)
+        val_label_names = tf.constant(self.v_label_names)
 
         val_dataset = tf.data.Dataset.from_tensor_slices((val_image_names, val_label_names))
         val_dataset = val_dataset.shuffle(buffer_size=500000)
@@ -84,7 +93,7 @@ class DataProvider():
         val_dataset = val_dataset.map(
             lambda img, label: tuple(tf.py_func(self.create_label, [img, label], [tf.float32, tf.float32], stateful=False)),
             num_parallel_calls=4)
-        val_dataset = val_dataset.prefetch(self.batch_size * 3)
+        val_dataset = val_dataset.prefetch(self.batch_size)
         val_dataset = val_dataset.batch(self.batch_size)
 
         iterator = tf.data.Iterator.from_structure(training_dataset.output_types, training_dataset.output_shapes)

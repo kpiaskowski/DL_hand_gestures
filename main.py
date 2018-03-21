@@ -13,7 +13,8 @@ latent_units = 200
 l_rate = 0.00001
 label_w = 64
 label_h = 48
-model_name = 'model2'
+model_name = 'model3'
+saver_checkpoint = 1000
 
 # data
 data_provider = DataProvider(batch_size, root_folder='../data', label_w=label_w, label_h=label_h)
@@ -54,7 +55,7 @@ with tf.Session() as sess:
     val_writer = tf.summary.FileWriter('summaries/val/' + model_name, flush_secs=60)
     sess.run(tf.global_variables_initializer())
 
-    if len(os.listdir('saved_model')) > 1:
+    if any([model_name in os.listdir('saved_model')]):
         saver.restore(sess, 'saved_model/' + model_name + '.ckpt')
         print('Continuing training')
     else:
@@ -72,7 +73,7 @@ with tf.Session() as sess:
                 train_writer.flush()
                 print('Training epoch: {} of {}, batch: {} of {}, cost: {}'.format(epoch, epochs, i, train_num_batches, cost))
                 i += 1
-                if i% 1000 == 0:
+                if i % saver_checkpoint == 0:
                     saver.save(sess, 'saved_model/' + model_name + '.ckpt', global_step=epoch * train_num_batches + i)
             except tf.errors.OutOfRangeError:
                 break
@@ -89,5 +90,3 @@ with tf.Session() as sess:
                 i += 1
             except tf.errors.OutOfRangeError:
                 break
-
-
