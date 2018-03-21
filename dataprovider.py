@@ -1,5 +1,5 @@
 import os
-
+import pickle
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -27,21 +27,25 @@ class DataProvider():
         t_labels = []
         v_images = []
         v_labels = []
-        for dirName, subdirList, fileList in os.walk(root_folder):
-            print('Collecting   ' + dirName)
-            files = [fname for fname in fileList]
-            if len(files) > 0:
-                if 'Depth' in dirName:
-                    if any(subj in dirName for subj in self.val_subjects):
-                        v_labels.extend([os.path.join(dirName, fname) for fname in fileList])
-                    else:
-                        t_labels.extend([os.path.join(dirName, fname) for fname in fileList])
-                elif 'Color' in dirName:
-                    if any(subj in dirName for subj in self.val_subjects):
-                        v_images.extend([os.path.join(dirName, fname) for fname in fileList])
-                    else:
-                        t_images.extend([os.path.join(dirName, fname) for fname in fileList])
-        return sorted(t_images), sorted(t_labels), sorted(v_images), sorted(v_labels)
+        if not os.path.isfile('filenames.p'):
+            for dirName, subdirList, fileList in os.walk(root_folder):
+                print('Collecting   ' + dirName)
+                files = [fname for fname in fileList]
+                if len(files) > 0:
+                    if 'Depth' in dirName:
+                        if any(subj in dirName for subj in self.val_subjects):
+                            v_labels.extend([os.path.join(dirName, fname) for fname in fileList])
+                        else:
+                            t_labels.extend([os.path.join(dirName, fname) for fname in fileList])
+                    elif 'Color' in dirName:
+                        if any(subj in dirName for subj in self.val_subjects):
+                            v_images.extend([os.path.join(dirName, fname) for fname in fileList])
+                        else:
+                            t_images.extend([os.path.join(dirName, fname) for fname in fileList])
+            pickle.dump([sorted(t_images), sorted(t_labels), sorted(v_images), sorted(v_labels)], open('filenames.p', 'wb'))
+            return sorted(t_images), sorted(t_labels), sorted(v_images), sorted(v_labels)
+        else:
+            return pickle.load(open('filenames.p', 'rb'))
 
     def read_images(self, img_name, label_name):
         """
