@@ -5,7 +5,7 @@ import tensorflow as tf
 from architectures.decoder import decoder_model
 from architectures.latent_space import latent_space
 from architectures.pretrained_encoder import encoder_model
-from dataprovider import DataProvider
+from vae_dataprovider import DataProvider
 
 epochs = 50
 batch_size = 20
