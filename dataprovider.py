@@ -28,6 +28,7 @@ class DataProvider():
         v_images = []
         v_labels = []
         for dirName, subdirList, fileList in os.walk(root_folder):
+            print('Collecting   ' + dirName)
             files = [fname for fname in fileList]
             if len(files) > 0:
                 if 'Depth' in dirName:

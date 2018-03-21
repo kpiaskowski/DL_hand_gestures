@@ -13,7 +13,7 @@ latent_units = 200
 l_rate = 0.00001
 label_w = 64
 label_h = 48
-model_name = 'model3'
+model_name = 'model1'
 saver_checkpoint = 1000
 
 # data
